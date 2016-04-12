@@ -129,9 +129,11 @@ class Application(Frame):
 		self.targetlabel.pack({"side":"bottom"})
 		
 		self.pvname = Entry(self.top_values, width=30)
+		self.pvname.insert(0, self.config.get("DEFAULT_PV_NAME"))
 		self.pvname.pack({"side":"top"})
 		
 		self.target = Entry(self.top_values, width=30)
+		self.target.insert(0, str(self.target_value))
 		self.target.pack({"side":"bottom"})
 
 		self.connection = Label(self.bottom)
@@ -161,7 +163,7 @@ class Application(Frame):
 
 		self.config = config
 		
-		self.pv = self.config.get("DEFAULT_PV_NAME")
+		self.pv = None
 		self.last_value = None
 		self.target_value = int(self.config.get("DEFAULT_TARGET_VALUE", 1))
 		self.connected = False
