@@ -17,6 +17,22 @@ if sys.platform == "win32" or sys.platform == "cygwin":
 	import winsound
 
 
+def load_config():
+	config = {}
+	
+	with open("./config", "r") as config_file:
+		for line in config_file:
+			name, val = line.split(":")
+			
+			config[name.strip()] = val.strip()
+	
+	return config
+
+def write_config(config):
+	with open("./config", "w") as config_file:
+		for key in config.keys():
+			config_file.write(key + " : " + config[key] + "\n")
+	
 class Application(Frame):
 
 	"""
@@ -32,9 +48,12 @@ class Application(Frame):
 			
 			if value == self.target_value:
 				if sys.platform == "linux2":
-					os.system("paplay ./complete.oga")
+					os.system("paplay " + self.config.get("LINUX_SOUND_PATH", "./complete.oga"))
 				elif sys.platform == "win32" or sys.platform == "cygwin":
-					winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
+					if self.config.get("WINDOWS_SOUND_TYPE") == "ALIAS":
+						winsound.PlaySound(self.config.get("WINDOWS_SOUND_PATH","SystemExclamation"), winsound.SND_ALIAS)
+					elif self.config.get("WINDOWS_SOUND_TYPE") == "PATH":
+						winsound.PlaySound(self.config.get("WINDOWS_SOUND_PATH"), winsound.SND_FILENAME)
 					
 
 
@@ -137,12 +156,14 @@ class Application(Frame):
 		self.watch["command"] = self.switch_pv
 
 
-	def __init__(self, master=None):
+	def __init__(self, master=None, config={}):
 		Frame.__init__(self, master)
 
-		self.pv = None
+		self.config = config
+		
+		self.pv = self.config.get("DEFAULT_PV_NAME")
 		self.last_value = None
-		self.target_value = 1
+		self.target_value = int(self.config.get("DEFAULT_TARGET_VALUE", 1))
 		self.connected = False
 
 		self.pack()
@@ -150,15 +171,14 @@ class Application(Frame):
 
 		#We need to call this once and it will run continuously
 		self.update_visual()
-
-
+	
 
 if __name__ == "__main__":
 	if 'PYEPICS_LIBCA' not in os.environ:
 		os.environ['PYEPICS_LIBCA'] = "/APSshare/epics/base-3.14.12.3/lib/linux-x86_64/libca.so"
-
+		
 	root = Tk()
-	app = Application(master=root)
+	app = Application(master=root, config=load_config())
 
 	root.protocol("WM_DELETE_WINDOW", app.on_exit)
 	app.master.title("Scan Monitor")
