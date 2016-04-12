@@ -13,6 +13,9 @@ from Tkinter import *
 
 from epics import PV
 
+if sys.platform == "win32" or sys.platform == "cygwin":
+	import winsound
+
 
 class Application(Frame):
 
@@ -28,7 +31,11 @@ class Application(Frame):
 			self.last_value = value
 			
 			if value == self.target_value:
-				os.system("paplay ./complete.oga")
+				if sys.platform == "linux2":
+					os.system("paplay ./complete.oga")
+				elif sys.platform == "win32" or sys.platform == "cygwin":
+					winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
+					
 
 
 	"""
