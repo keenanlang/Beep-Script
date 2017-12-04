@@ -3,6 +3,7 @@
 
 import os
 import sys
+import argparse
 
 from Tkinter import *
 
@@ -12,11 +13,11 @@ if sys.platform == "win32" or sys.platform == "cygwin":
 	import winsound
 
 
-def load_config(config_path):
+def load_config(cmd_args):
 	config = {}
 
-	if config_path:
-		with open(config_path, "r") as config_file:
+	if cmd_args.config_path:
+		with open(cmd_args.config_path, "r") as config_file:
 			for line in config_file:
 				name, val = line.split(":")
 				
@@ -157,14 +158,14 @@ class Application(Frame):
 if __name__ == "__main__":
 	if 'PYEPICS_LIBCA' not in os.environ:
 		os.environ['PYEPICS_LIBCA'] = "/APSshare/epics/base-3.14.12.3/lib/linux-x86_64/libca.so"
-		
-	config_path = None
+
+	parser = argparse.ArgumentParser(description="PV Status Alarm Script")
+	parser.add_argument("-c", "--config", metavar="conf", dest="config_path", action="store", default=None, help="path to configuration file")
 	
-	if len(sys.argv) > 1:
-		config_path = sys.argv[1]
-		
+	cmd_args = parser.parse_args()
+			
 	root = Tk()
-	app = Application(master=root, config=load_config(config_path))
+	app = Application(master=root, config=load_config(cmd_args))
 	
 	root.protocol("WM_DELETE_WINDOW", app.on_exit)
 	app.master.title("Scan Monitor")
