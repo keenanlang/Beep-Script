@@ -1,13 +1,8 @@
 #!/usr/bin/python
 
-"""
-Scan Completion Alert w/GUI
-
-	2014/01/20 - K. Lang - Initial
-"""
-
 
 import os
+import sys
 
 from Tkinter import *
 
@@ -17,21 +12,18 @@ if sys.platform == "win32" or sys.platform == "cygwin":
 	import winsound
 
 
-def load_config():
+def load_config(config_path):
 	config = {}
-	
-	with open("./config", "r") as config_file:
-		for line in config_file:
-			name, val = line.split(":")
-			
-			config[name.strip()] = val.strip()
-	
-	return config
 
-def write_config(config):
-	with open("./config", "w") as config_file:
-		for key in config.keys():
-			config_file.write(key + " : " + config[key] + "\n")
+	if config_path:
+		with open(config_path, "r") as config_file:
+			for line in config_file:
+				name, val = line.split(":")
+				
+				config[name.strip()] = val.strip()
+		
+	return config
+	
 	
 class Application(Frame):
 
@@ -48,9 +40,9 @@ class Application(Frame):
 			
 			if value == self.target_value:
 				if sys.platform == "linux2":
-					os.system("paplay " + self.config.get("LINUX_SOUND_PATH", "./complete.oga"))
+					os.system("paplay " + self.config.get("LINUX_SOUND_PATH", "/usr/share/sounds/freedesktop/stereo/complete.oga"))
 				elif sys.platform == "win32" or sys.platform == "cygwin":
-					if self.config.get("WINDOWS_SOUND_TYPE") == "ALIAS":
+					if self.config.get("WINDOWS_SOUND_TYPE", "ALIAS") == "ALIAS":
 						winsound.PlaySound(self.config.get("WINDOWS_SOUND_PATH","SystemExclamation"), winsound.SND_ALIAS)
 					elif self.config.get("WINDOWS_SOUND_TYPE") == "PATH":
 						winsound.PlaySound(self.config.get("WINDOWS_SOUND_PATH"), winsound.SND_FILENAME)
@@ -109,46 +101,33 @@ class Application(Frame):
 			self.pv.disconnect()
 
 		self.connected = False
-		self.quit()
+		self.quit()	
 
-
-	def createWidgets(self):
-		#Split display into three sections
-		self.top = Frame(self)
-		
-		self.top_labels = Frame(self.top)
-		self.top_values = Frame(self.top)
-		self.bottom = Frame(self)
-
-		self.pvlabel = Label(self.top_labels)
+	def create_widgets(self):
+		self.pvlabel = Label(self)
 		self.pvlabel["text"] = "PV Name: "
-		self.pvlabel.pack({"side":"top"})
+		self.pvlabel.grid(row=0, column=0)
 		
-		self.targetlabel = Label(self.top_labels)
+		self.targetlabel = Label(self)
 		self.targetlabel["text"] = "Target Val: "
-		self.targetlabel.pack({"side":"bottom"})
+		self.targetlabel.grid(row=1, column=0)
 		
-		self.pvname = Entry(self.top_values, width=30)
-		self.pvname.insert(0, self.config.get("DEFAULT_PV_NAME"))
-		self.pvname.pack({"side":"top"})
+		self.pvname = Entry(self, width=30)
+		self.pvname.insert(0, self.config.get("DEFAULT_PV_NAME", ""))
+		self.pvname.grid(row=0, column=1)
 		
-		self.target = Entry(self.top_values, width=30)
+		self.target = Entry(self, width=30)
 		self.target.insert(0, str(self.target_value))
-		self.target.pack({"side":"bottom"})
+		self.target.grid(row=1, column=1)
 
-		self.connection = Label(self.bottom)
+		self.connection = Label(self)
 		self.connection.config(width=30)
-		self.connection.pack({"side":"right"})
+		self.connection.grid(row=2, column=1)
 
-		self.watch = Button(self.bottom)
+		self.watch = Button(self)
 		self.watch["text"] = "Watch"
-		self.watch.pack({"side": "left"})
-
-		self.top_labels.pack({"side":"left"})
-		self.top_values.pack({"side":"right"})
-		self.top.pack({"side":"top"})
-		self.bottom.pack({"side":"bottom"})
-
+		self.watch.grid(row=2, column=0)
+		
 		"""
 			Hitting enter in the text field should work the same as pressing
 		the watch button.
@@ -169,7 +148,7 @@ class Application(Frame):
 		self.connected = False
 
 		self.pack()
-		self.createWidgets()
+		self.create_widgets()
 
 		#We need to call this once and it will run continuously
 		self.update_visual()
@@ -179,9 +158,14 @@ if __name__ == "__main__":
 	if 'PYEPICS_LIBCA' not in os.environ:
 		os.environ['PYEPICS_LIBCA'] = "/APSshare/epics/base-3.14.12.3/lib/linux-x86_64/libca.so"
 		
+	config_path = None
+	
+	if len(sys.argv) > 1:
+		config_path = sys.argv[1]
+		
 	root = Tk()
-	app = Application(master=root, config=load_config())
-
+	app = Application(master=root, config=load_config(config_path))
+	
 	root.protocol("WM_DELETE_WINDOW", app.on_exit)
 	app.master.title("Scan Monitor")
 
