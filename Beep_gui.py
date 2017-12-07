@@ -147,8 +147,6 @@ class SoundPopup(Toplevel):
 		
 		
 		
-		
-		
 class PVLine(Frame):
 
 	def disconnect(self):
@@ -157,6 +155,11 @@ class PVLine(Frame):
 
 		self.connected = False
 	
+	def connect(self):
+		if len(self.pvname.get()):
+			self.pv = PV(self.pvname.get(), connection_callback=self.connection_monitor)		
+			self.pv.add_callback(self.status_change)
+		
 	#PV value callback
 	def status_change(self, value, **kws):
 		if self.last_value == None:
@@ -186,10 +189,7 @@ class PVLine(Frame):
 	#Switch from one pv to another
 	def switch_pv(self):
 		self.disconnect()
-		
-		if len(self.pvname.get()):
-			self.pv = PV(self.pvname.get(), connection_callback=self.connection_monitor)		
-			self.pv.add_callback(self.status_change)
+		self.connect()
 
 	def change_target(self):
 		self.last_value = None
@@ -254,6 +254,7 @@ class PVLine(Frame):
 		self.target.bind("<Return>",   lambda x: self.change_target())
 		self.target.bind("<FocusOut>", lambda x: self.change_target())
 			
+		self.connect()
 		self.update_visual()
 	
 	
