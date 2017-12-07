@@ -1,5 +1,16 @@
-DEFAULT_PV_NAME : 
-DEFAULT_TARGET_VALUE : 1
-LINUX_SOUND_PATH : ./complete.oga
-WINDOWS_SOUND_PATH : SystemExclamation
-WINDOWS_SOUND_TYPE : ALIAS
+[MAIN]
+NUMBER_OF_PVS: 4
+
+[PV_0]
+NAME: xxx:yyy:test1
+TARGET: 1
+LINUX_SOUND: ./complete.oga
+WINDOWS_SOUND: SystemExclamation
+WINDOWS_SOUND_TYPE: ALIAS
+
+[PV_1]
+NAME: xxx:yyy:test2
+TARGET: 10
+LINUX_SOUND: ./complete.oga
+WINDOWS_SOUND: SystemExclamation
+WINDOWS_SOUND_TYPE: ALIAS
