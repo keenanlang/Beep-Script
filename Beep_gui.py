@@ -161,15 +161,15 @@ class PVLine(Frame):
 			self.pv.add_callback(self.status_change)
 		
 	#PV value callback
-	def status_change(self, value, **kws):
+	def status_change(self, value, char_value=None, **kws):
 		if self.last_value == None:
-			self.last_value = value
+			self.last_value = char_value
 			return
 	
-		if value != self.last_value:
-			self.last_value = value
+		if char_value != self.last_value:
+			self.last_value = char_value
 			
-			if value == self.target_value:
+			if char_value == self.target_value:
 				if sys.platform == "linux2":
 					os.system("paplay " + self.LinuxSound)
 				elif sys.platform == "win32" or sys.platform == "cygwin":
@@ -196,7 +196,7 @@ class PVLine(Frame):
 		self.target_value = None
 		
 		if len(self.target.get()):
-			self.target_value = int(self.target.get())
+			self.target_value = self.target.get()
 	
 	#Use tkinter's event queue to update connection status
 	def update_visual(self):
@@ -228,7 +228,7 @@ class PVLine(Frame):
 		self.pv = None
 		self.connected = False
 		self.last_value = None
-		self.target_value = int(config.get("target", 1))
+		self.target_value = config.get("target", 1)
 		
 		self.LinuxSound = config.get("linux_sound", "/usr/share/sounds/freedesktop/stereo/complete.oga")
 		self.WindowsSound = config.get("windows_sound", "SystemExclamation")
@@ -239,7 +239,7 @@ class PVLine(Frame):
 		self.pvname.grid(row=0, column=0, padx=(0,5), pady=(0,5))
 		
 		self.target = Entry(self, width=10, justify="right")
-		self.target.insert(0, str(self.target_value))
+		self.target.insert(0, self.target_value)
 		self.target.grid(row=0, column=1, padx=(0,5), pady=(0,5))
 		
 		self.connection = Label(self, width=12)
