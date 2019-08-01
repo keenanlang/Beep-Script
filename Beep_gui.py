@@ -86,14 +86,17 @@ class LabelLine(Frame):
 	def __init__(self, master, add_func=None, save_func=None):
 		Frame.__init__(self, master)
 	
+		self.offset = Label(self, text="", width=2)
+		self.offset.grid(row=0, column=0, padx=(0,5), pady=(5,5))
+	
 		self.pvlabel = Label(self, text="PV Name", width=30)
-		self.pvlabel.grid(row=0, column=0, padx=(0,5), pady=(5,5))
+		self.pvlabel.grid(row=0, column=1, padx=(0,5), pady=(5,5))
 		
-		self.targetlabel = Label(self, text="Target Val", width=10, anchor="e")
-		self.targetlabel.grid(row=0, column=1, padx=(0,5), pady=(5,5))
+		self.targetlabel = Label(self, text="Target Val", width=20)
+		self.targetlabel.grid(row=0, column=2, padx=(0,5), pady=(5,5))
 		
-		self.placeholder = Label(self, width=9)
-		self.placeholder.grid(row=0, column=2, padx=(0,7), pady=(5,5))
+		self.placeholder = Label(self, width=12)
+		self.placeholder.grid(row=0, column=3, padx=(0,10), pady=(5,5))
 
 		self.button_frame = Frame(self)
 		
@@ -105,7 +108,7 @@ class LabelLine(Frame):
 		self.save_button = Button(self.button_frame, image=self.saveimage, command=save_func)
 		self.save_button.grid(row=0, column=1, padx=(0,5))
 	
-		self.button_frame.grid(row=0, column=3, padx=(4,5), pady=(5,5))
+		self.button_frame.grid(row=0, column=4, padx=(4,5), pady=(5,5))
 		
 
 	
@@ -207,6 +210,8 @@ class PVLine(Frame):
 
 		self.master.after(250, self.update_visual)
 		
+	def delete_line(self):
+		self.master.remove_pv(self)
 		
 	def settings_accept(self):
 		self.LinuxSound = self.popup.lentry.get()
@@ -222,7 +227,11 @@ class PVLine(Frame):
 		self.popup.wentry.insert(0, self.WindowsSound)
 		self.popup.tentry.insert(0, self.WindowsSoundType)
 	
-	def __init__(self, master, config={}):
+	def decrement(self):
+		self.val = self.val - 1
+		self.index.configure(text=str(self.val) + ": ")
+		
+	def __init__(self, master, val, config={}):
 		Frame.__init__(self, master)
 		
 		self.pv = None
@@ -234,20 +243,28 @@ class PVLine(Frame):
 		self.WindowsSound = config.get("windows_sound", "SystemExclamation")
 		self.WindowsSoundType = config.get("windows_sound_type", "ALIAS")
 		
+		self.val = val
+		self.index = Label(self, width=2, text=str(self.val) + ": ")
+		self.index.grid(row=0, column=0, padx=(5,0), pady=(0,5))
+		
 		self.pvname = Entry(self, width=30)
 		self.pvname.insert(0, config.get("name", ''))
-		self.pvname.grid(row=0, column=0, padx=(0,5), pady=(0,5))
+		self.pvname.grid(row=0, column=1, padx=(0,5), pady=(0,5))
 		
-		self.target = Entry(self, width=10, justify="right")
+		self.target = Entry(self, width=20, justify="right")
 		self.target.insert(0, self.target_value)
-		self.target.grid(row=0, column=1, padx=(0,5), pady=(0,5))
+		self.target.grid(row=0, column=2, padx=(0,5), pady=(0,5))
 		
 		self.connection = Label(self, width=12)
-		self.connection.grid(row=0, column=2, padx=(0,5), pady=(0,5))
+		self.connection.grid(row=0, column=3, padx=(0,5), pady=(0,5))
 		
 		self.settings_image = PhotoImage(data=sound_icon)
 		self.settings = Button(self, image=self.settings_image, command=self.popup)
-		self.settings.grid(row=0, column=3, padx=(0,5), pady=(0,5))
+		self.settings.grid(row=0, column=4, padx=(0,5), pady=(0,5))
+		
+		self.remove_image = PhotoImage(data=no_icon)
+		self.remove = Button(self, image=self.remove_image, command=self.delete_line)
+		self.remove.grid(row=0, column=5, padx=(0,5), pady=(0,5))
 		
 		self.pvname.bind("<Return>",   lambda x: self.switch_pv())
 		self.pvname.bind("<FocusOut>", lambda x: self.switch_pv())
@@ -266,14 +283,20 @@ class Application(Frame):
 		
 		self.quit()
 	
-	def add_pv(self, config={}):
-		self.numlabels.append(Label(self, text=(str(self.num_pvs + 1) + ": ")))
-		self.numlabels[self.num_pvs].grid(row=(self.num_pvs + 1), column=0, padx=(5,0))
+	def add_pv(self, config={}):		
+		self.pvs.append(PVLine(self, len(self.pvs) + 1, config=config))
+		self.next_row = self.next_row + 1
 		
-		self.pvs.append(PVLine(self, config=config))
-		self.pvs[self.num_pvs].grid(row=(self.num_pvs + 1), column=1)
+		self.pvs[len(self.pvs) - 1].grid(row=self.next_row, column=0)
 		
-		self.num_pvs = self.num_pvs + 1
+	def remove_pv(self, pv):
+		index = self.pvs.index(pv)
+		
+		self.pvs.remove(pv)
+		pv.grid_remove()
+		
+		for i in range(index, len(self.pvs)):
+			self.pvs[i].decrement()
 		
 		
 	def save_config(self):
@@ -283,17 +306,21 @@ class Application(Frame):
 			config = ConfigParser.RawConfigParser()
 			
 			config.add_section("MAIN")
-			config.set("MAIN", "NUMBER_OF_PVS", str(self.num_pvs))
+			config.set("MAIN", "NUMBER_OF_PVS", str(len(self.pvs)))
 			
-			for i in range(self.num_pvs):
+			i = 0
+			
+			for pv in self.pvs:
 				index = "PV_" + str(i)
 				config.add_section(index)
 				
-				config.set(index, "NAME", self.pvs[i].pvname.get())
-				config.set(index, "TARGET", self.pvs[i].target.get())
-				config.set(index, "LINUX_SOUND", self.pvs[i].LinuxSound)
-				config.set(index, "WINDOWS_SOUND", self.pvs[i].WindowsSound)
-				config.set(index, "WINDOWS_SOUND_TYPE", self.pvs[i].WindowsSoundType)
+				config.set(index, "NAME", pv.pvname.get())
+				config.set(index, "TARGET", pv.target.get())
+				config.set(index, "LINUX_SOUND", pv.LinuxSound)
+				config.set(index, "WINDOWS_SOUND", pv.WindowsSound)
+				config.set(index, "WINDOWS_SOUND_TYPE", pv.WindowsSoundType)
+				
+				i = i + 1
 				
 			config.write(f)
 	
@@ -304,12 +331,11 @@ class Application(Frame):
 		master.protocol("WM_DELETE_WINDOW", self.on_exit)
 		master.title("Scan Monitor")
 		
-		self.num_pvs = 0
-		self.numlabels = []
+		self.next_row = 0
 		self.pvs = []
 		
 		self.labels = LabelLine(self, add_func=self.add_pv, save_func=self.save_config)
-		self.labels.grid(row=0, column=1)
+		self.labels.grid(row=0, column=0)
 				
 		for i in range(int(config.get("NUMBER_OF_PVS", 1))):
 			self.add_pv(config=config.get("PV_" + str(i), {}))
